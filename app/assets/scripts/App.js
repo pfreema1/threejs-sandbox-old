@@ -1,159 +1,124 @@
-var scene = new THREE.Scene();
-var camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 10000 );
-
 var renderer = new THREE.WebGLRenderer({
   antialias: true
 });
-renderer.setSize( window.innerWidth, window.innerHeight );
-document.body.appendChild( renderer.domElement );
+document.body.appendChild(renderer.domElement);
+renderer.setSize(window.innerWidth, window.innerHeight);
 
+var camera = new THREE.PerspectiveCamera(35, window.innerWidth / window.innerHeight, 0.1, 3000);
+camera.position.z = 20;
 
-var clock = new THREE.Clock();
+var controls = new THREE.OrbitControls(camera, renderer.domElement);
 
-// axes helper
-// The X axis is red. The Y axis is green. The Z axis is blue.
-var axesHelper = new THREE.AxesHelper( 500 );
+var scene = new THREE.Scene();
+
+var size = 10;
+var divisions = 10;
+
+// helplers
+var gridHelper = new THREE.GridHelper( size, divisions );
+scene.add( gridHelper );
+
+var axesHelper = new THREE.AxesHelper( 5 );
 scene.add( axesHelper );
 
-var worldWidth = 256;
-var worldDepth = 256;
-var worldHalfWidth = worldWidth / 2; 
-var worldHalfDepth = worldDepth / 2;
+// lights
+var light = new THREE.AmbientLight(0xffffff, 0.5);
+scene.add(light);
 
+var light1 = new THREE.PointLight(0xffffff, 0.5);
+// light1.position.set(0, 20000, 0);
+scene.add(light1);
 
-// background color
-scene.background = new THREE.Color( 'black' );
+// geometry
+const NUM_LINES = 100;
+const NUM_POINTS_PER_LINE = 100;
+const SPACE_BETWEEN_POINTS = 5;
+const MAX_HEIGHT = 30;
+const Z_OFFSET = -10;
+const Y_OFFSET = 1;
+const HEIGHT_SCALAR = .1;
+let lineVectors = [];
+let lineCurves = [];
+let linePoints = [];
+let lineGeometries = [];
+let lineMeshes = [];
+let curtainShapes = [];
+let curtainGeometries = [];
+let curtainMeshes = [];
 
-// controls
-controls = new THREE.FirstPersonControls( camera );
-controls.movementSpeed = 1000;
-
-// height data
-var data = generateHeight( worldWidth, worldDepth );
-console.log('data:  ', data);
-
-
-
-/**********
- *   curve
- */
-
-CustomSinCurve.prototype = Object.create( THREE.Curve.prototype );
-CustomSinCurve.prototype.constructor = CustomSinCurve;
-
-CustomSinCurve.prototype.getPoint = function (t) {
-    var tx = (t * 8 - 1.5);
-    var ty = (data[counter] * .01) + (offset1 * OFFSET_MULTI); 
-    var tz = 0 + (offset1 * OFFSET_MULTI);
-
-    counter++;
-    offset1++;
-    offset2++;
-    // console.log('counter:  ', counter);
-    // console.log('t:  ', t * 200);
-    // note: t is the tracker for points along the line
-
-    if(t * 200 < 50 || t * 200 > 150) {
-        ty = ((data[counter] * .01) / END_OF_LINE_DIVISOR) + (offset1 * OFFSET_MULTI);
-        // ty /= 20;
-    } else {
-
-    }
-
-	return new THREE.Vector3( tx, ty, tz ).multiplyScalar( this.scale );
-
-};
-
-var counter = 0;
-var offset1 = 0;
-var offset2 = 0;
-var OFFSET_MULTI = 0.001;
-var NUM_LINES = 1;
-var NUM_POINTS_PER_LINE = 200;
-var END_OF_LINE_DIVISOR = 7;
-var planeArr = [];
+ // line material
+let lineMaterial = new THREE.MeshBasicMaterial({
+  color: '#d1d1d1',
+  side: THREE.DoubleSide
+});
 
 // runs for each line
 for(let i = 0; i < NUM_LINES; i++) {
-    var path = new CustomSinCurve(100);
-    console.log('path:  ', path); 
-    var points = path.getPoints();
-    
-    // curtain
-    // var curtainShape = new THREE.Shape();
-    // curtainShape.moveTo(points[0].x, 0, points[0].z);
+  // create array of vector points for line
+  lineVectors.push(returnVectorPointsForLine(Z_OFFSET * i));
+  // add curve to array of curves
+  lineCurves.push(new THREE.SplineCurve3(lineVectors[i]));
+  // use getPoints to get an array of points on the curve so we can draw the curtain
+  linePoints.push(lineCurves[i].getPoints(100));
+  // create geometries
+  lineGeometries.push(new THREE.TubeGeometry(lineCurves[i], 200, 1, 4, false));
+  // create mesh
+  lineMeshes.push(new THREE.Mesh(lineGeometries[i], lineMaterial));
+  // offset line mesh
+  lineMeshes[i].position.y += Y_OFFSET * i;
+  scene.add(lineMeshes[i]);
 
-    // for(let i = 0; i < points.length; i++) {
-    //   curtainShape.lineTo(points[i].x, points[i].y, points[i].z);
+  curtainShapes.push(new THREE.Shape());
+  curtainShapes[i].moveTo(0,0,0);
+  // iterate through points to draw curtain
+  for(let j = 0; j < linePoints[i].length; j++) {
+    curtainShapes[i].lineTo(linePoints[i][j].x, linePoints[i][j].y, linePoints[i][j].z);
 
-    //   // if at end of points draw the bottom of curtain
-    //   if(i + 1 === points.length) {
-    //     curtainShape.lineTo(points[i].x, 0, points[i].z);
-    //   }
-    // }
-
-    // console.log('curtainShape:  ', curtainShape);
-
-    // var curtainGeometry = new THREE.ShapeGeometry(curtainShape);
-    // var curtainMesh = new THREE.Mesh(curtainGeometry, new THREE.MeshLambertMaterial({
-    //   color: 'blue',
-    //   side: THREE.DoubleSide
-    // }));
-    // scene.add(curtainMesh);
-    
-
-    // TubeBufferGeometry(path : Curve, tubularSegments : Integer, radius : Float, radialSegments : Integer, closed : Boolean)
-    var geometry = new THREE.TubeBufferGeometry( path, NUM_POINTS_PER_LINE, 2, 4, false );
-    var material = new THREE.MeshBasicMaterial( { color: '#D1D1D1' } );
-    var mesh = new THREE.Mesh( geometry, material );
-    scene.add( mesh );
-}
-
-/********************** */
-
-// camera positioning
-camera.position.x = 333.322;
-camera.position.y = 346.895;
-camera.position.z = -331.2867;
-
-
-
-
-
-function generateHeight( width, height ) {
-    var size = width * height;
-    var data = new Uint8Array( size );
-    var perlin = new ImprovedNoise();
-    var quality = 1;
-    var z = Math.random() * 100;
-
-    for ( var j = 0; j < 4; j ++ ) {
-        for ( var i = 0; i < size; i ++ ) {
-            var x = i % width;
-            var y = ~~ ( i / width );
-            data[ i ] += Math.abs( perlin.noise( x / quality, y / quality, z ) * quality * 1.75 );
-            // console.log('data[i]:  ', data[i]);
-        }
-        quality *= 5;
+    // if at end of points, draw the bottom of the curtain
+    if(j + 1 === linePoints[i].length) {
+      curtainShapes[i].lineTo(linePoints[i][j].x, 0, linePoints[i][j].z);
     }
-    
-    return data;
+  }
+
+  curtainGeometries.push(new THREE.ShapeGeometry(curtainShapes[i]));
+  curtainMeshes.push(new THREE.Mesh(curtainGeometries[i], new THREE.MeshLambertMaterial({
+    color: 'black'
+  })));
+  // offset curtain mesh
+  curtainMeshes[i].position.y += Y_OFFSET * i;
+  curtainMeshes[i].position.z += Z_OFFSET * i;
+
+  scene.add(curtainMeshes[i]);
+
+  
 }
 
 
+// render
+requestAnimationFrame(render);
 
-function CustomSinCurve( scale ) {
-    
-	THREE.Curve.call( this );
+function render() {
+  // mesh.rotation.x += 0.05;
+  // mesh.rotation.y += 0.02;
 
-	this.scale = ( scale === undefined ) ? 1 : scale;
-
+  renderer.render(scene, camera);
+  requestAnimationFrame(render);
 }
 
-function animate() {
-    requestAnimationFrame( animate );
-    controls.update( clock.getDelta() );
-    renderer.render( scene, camera );
+function returnVectorPointsForLine(zOff) {
+  let lineVecArr = [];
+
+  for(let i = 0; i < NUM_POINTS_PER_LINE; i++) {
+    let heightVal = THREE.Math.randInt(0, MAX_HEIGHT);
+  
+    if(i < NUM_POINTS_PER_LINE * .25 || i > NUM_POINTS_PER_LINE * .75) {
+      heightVal *= HEIGHT_SCALAR;
+    }
+  
+    lineVecArr.push(new THREE.Vector3(i * SPACE_BETWEEN_POINTS, heightVal, zOff));
+  }
+
+  return lineVecArr;
 }
 
-animate();
+
