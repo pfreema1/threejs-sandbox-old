@@ -76,17 +76,7 @@ var planeArr = [];
 // runs for each line
 for(let i = 0; i < NUM_LINES; i++) {
     var path = new CustomSinCurve(100);
-    console.log('path:  ', path);
-    // PlaneGeometry(width : Float, height : Float, widthSegments : Integer, heightSegments : Integer)
-    var planeGeom = new THREE.PlaneGeometry(200, 200, 200, 200);
-    planeArr.push(new THREE.Mesh(planeGeom, new THREE.MeshBasicMaterial({
-      color: 'blue',
-      wireframe: false,
-      side: THREE.DoubleSide,
-      transparent: true,
-      opacity: 0.75
-    })));
-    scene.add(planeArr[i]);
+    console.log('path:  ', path.getPoints());  
 
     // TubeBufferGeometry(path : Curve, tubularSegments : Integer, radius : Float, radialSegments : Integer, closed : Boolean)
     var geometry = new THREE.TubeBufferGeometry( path, NUM_POINTS_PER_LINE, 2, 4, false );
@@ -96,7 +86,6 @@ for(let i = 0; i < NUM_LINES; i++) {
 }
 
 /********************** */
-console.log('planeArr:  ', planeArr);
 
 // camera positioning
 camera.position.x = 333.322;
