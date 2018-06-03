@@ -76,7 +76,31 @@ var planeArr = [];
 // runs for each line
 for(let i = 0; i < NUM_LINES; i++) {
     var path = new CustomSinCurve(100);
-    console.log('path:  ', path.getPoints());  
+    console.log('path:  ', path); 
+    var points = path.getPoints();
+    
+    // curtain
+    // var curtainShape = new THREE.Shape();
+    // curtainShape.moveTo(points[0].x, 0, points[0].z);
+
+    // for(let i = 0; i < points.length; i++) {
+    //   curtainShape.lineTo(points[i].x, points[i].y, points[i].z);
+
+    //   // if at end of points draw the bottom of curtain
+    //   if(i + 1 === points.length) {
+    //     curtainShape.lineTo(points[i].x, 0, points[i].z);
+    //   }
+    // }
+
+    // console.log('curtainShape:  ', curtainShape);
+
+    // var curtainGeometry = new THREE.ShapeGeometry(curtainShape);
+    // var curtainMesh = new THREE.Mesh(curtainGeometry, new THREE.MeshLambertMaterial({
+    //   color: 'blue',
+    //   side: THREE.DoubleSide
+    // }));
+    // scene.add(curtainMesh);
+    
 
     // TubeBufferGeometry(path : Curve, tubularSegments : Integer, radius : Float, radialSegments : Integer, closed : Boolean)
     var geometry = new THREE.TubeBufferGeometry( path, NUM_POINTS_PER_LINE, 2, 4, false );
