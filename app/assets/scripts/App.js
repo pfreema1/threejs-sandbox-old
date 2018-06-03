@@ -1,7 +1,9 @@
 var scene = new THREE.Scene();
 var camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 10000 );
 
-var renderer = new THREE.WebGLRenderer();
+var renderer = new THREE.WebGLRenderer({
+  antialias: true
+});
 renderer.setSize( window.innerWidth, window.innerHeight );
 document.body.appendChild( renderer.domElement );
 
@@ -65,14 +67,27 @@ CustomSinCurve.prototype.getPoint = function (t) {
 var counter = 0;
 var offset1 = 0;
 var offset2 = 0;
-var OFFSET_MULTI = 0.0001;
-var NUM_LINES = 70;
+var OFFSET_MULTI = 0.001;
+var NUM_LINES = 1;
 var NUM_POINTS_PER_LINE = 200;
 var END_OF_LINE_DIVISOR = 7;
+var planeArr = [];
 
 // runs for each line
 for(let i = 0; i < NUM_LINES; i++) {
     var path = new CustomSinCurve(100);
+    console.log('path:  ', path);
+    // PlaneGeometry(width : Float, height : Float, widthSegments : Integer, heightSegments : Integer)
+    var planeGeom = new THREE.PlaneGeometry(200, 200, 200, 200);
+    planeArr.push(new THREE.Mesh(planeGeom, new THREE.MeshBasicMaterial({
+      color: 'blue',
+      wireframe: false,
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.75
+    })));
+    scene.add(planeArr[i]);
+
     // TubeBufferGeometry(path : Curve, tubularSegments : Integer, radius : Float, radialSegments : Integer, closed : Boolean)
     var geometry = new THREE.TubeBufferGeometry( path, NUM_POINTS_PER_LINE, 2, 4, false );
     var material = new THREE.MeshBasicMaterial( { color: '#D1D1D1' } );
@@ -81,7 +96,7 @@ for(let i = 0; i < NUM_LINES; i++) {
 }
 
 /********************** */
-
+console.log('planeArr:  ', planeArr);
 
 // camera positioning
 camera.position.x = 333.322;
