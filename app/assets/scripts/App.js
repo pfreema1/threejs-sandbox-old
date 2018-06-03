@@ -30,48 +30,71 @@ var light1 = new THREE.PointLight(0xffffff, 0.5);
 scene.add(light1);
 
 // geometry
-var curve = new THREE.SplineCurve3([
-  new THREE.Vector3(0, 0, 0),
-  new THREE.Vector3(5, 5, 0),
-  new THREE.Vector3(10, 2, 0)
-]);
-var geometry = new THREE.TubeGeometry(curve, 10, 1, 4, false);
+const NUM_LINES = 100;
+const NUM_POINTS_PER_LINE = 100;
+const SPACE_BETWEEN_POINTS = 5;
+const MAX_HEIGHT = 30;
+const Z_OFFSET = -10;
+const Y_OFFSET = 1;
+const HEIGHT_SCALAR = .1;
+let lineVectors = [];
+let lineCurves = [];
+let linePoints = [];
+let lineGeometries = [];
+let lineMeshes = [];
+let curtainShapes = [];
+let curtainGeometries = [];
+let curtainMeshes = [];
 
-var points = curve.getPoints();
-console.log('points:  ', points);
-
-var curtainShape = new THREE.Shape();
-curtainShape.moveTo(0,0,0);
-for(let i = 0; i < points.length; i++) {
-  curtainShape.lineTo(points[i].x, points[i].y, points[i].z);
-  
-  //if at end of points, draw the bottom of the curtain
-  if(i + 1 === points.length) {
-    curtainShape.lineTo(points[i].x, 0, points[i].z);
-  }
-}
-
-var extrudeSettings = {
-  amounts: 1,
-  steps: 1
-};
-
-var curtainGeometry = new THREE.ShapeGeometry(curtainShape);
-var curtainMesh = new THREE.Mesh(curtainGeometry, new THREE.MeshLambertMaterial());
-scene.add(curtainMesh);
-
-// material
-var material = new THREE.MeshLambertMaterial({ 
-  color: 'green',
+ // line material
+let lineMaterial = new THREE.MeshBasicMaterial({
+  color: '#d1d1d1',
   side: THREE.DoubleSide
 });
 
-// mesh
-var mesh = new THREE.Mesh(geometry, material);
-scene.add(mesh);
+// runs for each line
+for(let i = 0; i < NUM_LINES; i++) {
+  // create array of vector points for line
+  lineVectors.push(returnVectorPointsForLine(Z_OFFSET * i));
+  // add curve to array of curves
+  lineCurves.push(new THREE.SplineCurve3(lineVectors[i]));
+  // use getPoints to get an array of points on the curve so we can draw the curtain
+  linePoints.push(lineCurves[i].getPoints(100));
+  // create geometries
+  lineGeometries.push(new THREE.TubeGeometry(lineCurves[i], 200, 1, 4, false));
+  // create mesh
+  lineMeshes.push(new THREE.Mesh(lineGeometries[i], lineMaterial));
+  // offset line mesh
+  lineMeshes[i].position.y += Y_OFFSET * i;
+  scene.add(lineMeshes[i]);
+
+  curtainShapes.push(new THREE.Shape());
+  curtainShapes[i].moveTo(0,0,0);
+  // iterate through points to draw curtain
+  for(let j = 0; j < linePoints[i].length; j++) {
+    curtainShapes[i].lineTo(linePoints[i][j].x, linePoints[i][j].y, linePoints[i][j].z);
+
+    // if at end of points, draw the bottom of the curtain
+    if(j + 1 === linePoints[i].length) {
+      curtainShapes[i].lineTo(linePoints[i][j].x, 0, linePoints[i][j].z);
+    }
+  }
+
+  curtainGeometries.push(new THREE.ShapeGeometry(curtainShapes[i]));
+  curtainMeshes.push(new THREE.Mesh(curtainGeometries[i], new THREE.MeshLambertMaterial({
+    color: 'black'
+  })));
+  // offset curtain mesh
+  curtainMeshes[i].position.y += Y_OFFSET * i;
+  curtainMeshes[i].position.z += Z_OFFSET * i;
+
+  scene.add(curtainMeshes[i]);
+
+  
+}
 
 
-// animation
+// render
 requestAnimationFrame(render);
 
 function render() {
@@ -81,4 +104,21 @@ function render() {
   renderer.render(scene, camera);
   requestAnimationFrame(render);
 }
+
+function returnVectorPointsForLine(zOff) {
+  let lineVecArr = [];
+
+  for(let i = 0; i < NUM_POINTS_PER_LINE; i++) {
+    let heightVal = THREE.Math.randInt(0, MAX_HEIGHT);
+  
+    if(i < NUM_POINTS_PER_LINE * .25 || i > NUM_POINTS_PER_LINE * .75) {
+      heightVal *= HEIGHT_SCALAR;
+    }
+  
+    lineVecArr.push(new THREE.Vector3(i * SPACE_BETWEEN_POINTS, heightVal, zOff));
+  }
+
+  return lineVecArr;
+}
+
 
